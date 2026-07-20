@@ -3,7 +3,13 @@
 from datetime import date, datetime
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    computed_field,
+    model_validator,
+)
 
 
 class Pagination(BaseModel):
@@ -65,6 +71,18 @@ class DocumentSummary(BaseModel):
         validation_alias="__search_hit__",
         description="Present only on results of a full-text query",
     )
+    web_url: str | None = Field(
+        default=None,
+        description="Link to open this document in the Paperless web UI",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _resolve_web_url(cls, data: Any, info: ValidationInfo) -> Any:
+        base_url = (info.context or {}).get("base_url")
+        if base_url and isinstance(data, dict) and data.get("id") is not None:
+            data = {**data, "web_url": f"{base_url}/documents/{data['id']}"}
+        return data
 
     @computed_field(  # type: ignore[prop-decorator]
         description="MCP resource URI for the document's full text content"

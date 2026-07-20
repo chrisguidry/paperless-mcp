@@ -59,3 +59,16 @@ async def test_errors_on_missing_document(
 
     with pytest.raises(ToolError, match="404"):
         await mcp_client.call_tool("get_document", {"document_id": 999})
+
+
+async def test_includes_web_url(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.get("http://paperless.test/api/documents/1/").respond(
+        json=document_json()
+    )
+
+    result = await mcp_client.call_tool("get_document", {"document_id": 1})
+
+    assert result.structured_content is not None
+    assert result.structured_content["web_url"] == "http://paperless.test/documents/1"

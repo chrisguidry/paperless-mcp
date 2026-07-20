@@ -33,7 +33,8 @@ Start with search_documents for anything content- or metadata-related.  Use
 the list_* tools to resolve tag, correspondent, document type, and storage
 path names to the IDs that search_documents filters on.  Every document
 result carries a `uri` — read it as an MCP resource to get the document's
-full text.  This server is read-only and cannot modify the archive.""",
+full text — and a `web_url` to link the user straight to the document in
+Paperless.  This server is read-only and cannot modify the archive.""",
 )
 
 client = PaperlessClient(
@@ -88,7 +89,8 @@ async def search_documents(
     it has no effect on full-text queries, which rank by relevance.
 
     Each result carries a `uri` — read it as an MCP resource for the
-    document's full text, or call get_document for complete metadata.
+    document's full text, or call get_document for complete metadata — and
+    a `web_url` linking to the document in the Paperless web UI.
     """
     params = _query_params(
         query=query,
@@ -107,8 +109,12 @@ async def search_documents(
         page_size=page_size,
     )
     data = await client.list_documents(params)
+    context = {"base_url": client.base_url}
     return DocumentSearchResponse(
-        documents=[DocumentSummary.model_validate(item) for item in data["results"]],
+        documents=[
+            DocumentSummary.model_validate(item, context=context)
+            for item in data["results"]
+        ],
         pagination=Pagination.from_api(data, page, page_size),
     )
 
@@ -124,7 +130,7 @@ async def get_document(document_id: int, include_content: bool = False) -> Docum
     data = await client.get_document(document_id)
     if not include_content:
         data["content"] = None
-    return Document.model_validate(data)
+    return Document.model_validate(data, context={"base_url": client.base_url})
 
 
 def _list_params(

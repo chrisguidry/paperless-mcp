@@ -121,3 +121,17 @@ async def test_reports_when_more_pages_exist(
     pagination = result.structured_content["pagination"]
     assert pagination["total_count"] == 100
     assert pagination["has_more"] is True
+
+
+async def test_includes_web_url(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.get("http://paperless.test/api/documents/").respond(
+        json=paginated([document_json(id=7)])
+    )
+
+    result = await mcp_client.call_tool("search_documents", {})
+
+    assert result.structured_content is not None
+    documents = result.structured_content["documents"]
+    assert documents[0]["web_url"] == "http://paperless.test/documents/7"

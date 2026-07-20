@@ -9,8 +9,9 @@ class PaperlessClient:
     """Read-only access to a paperless-ngx instance, authenticated by token."""
 
     def __init__(self, base_url: str, token: str) -> None:
+        self.base_url = base_url.rstrip("/")
         self._http = httpx.AsyncClient(
-            base_url=base_url.rstrip("/"),
+            base_url=self.base_url,
             headers={
                 "Authorization": f"Token {token}",
                 "Accept": "application/json; version=9",
