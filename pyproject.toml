@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paperless-mcp"
+version = "0.1.0"
+description = "Read-only MCP server for paperless-ngx"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = [
+    "fastmcp>=3.0",
+    "httpx>=0.28",
+    "pydantic>=2.11",
+]
+
+[project.scripts]
+paperless-mcp = "server:mcp.run"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["server.py", "models.py", "client.py"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16",
+    "pre-commit>=4.0",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.0",
+    "pytest-cov>=6.2",
+    "pytest-env>=1.1",
+    "respx>=0.22",
+    "ruff>=0.12",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=server",
+    "--cov=models",
+    "--cov=client",
+    "--cov=tests/",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-fail-under=100",
+    "--strict-markers",
+    "--strict-config",
+    "-Werror",
+]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["error"]
+env = [
+    "PAPERLESS_URL=http://paperless.test",
+    "PAPERLESS_TOKEN=test-token",
+]
+
+[tool.coverage.report]
+exclude_also = ["if __name__ == .__main__.:"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "RUF"]
