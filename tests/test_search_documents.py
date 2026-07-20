@@ -1,6 +1,7 @@
 """Tests for the search_documents tool."""
 
 import fastmcp
+import pytest
 import respx
 from conftest import document_json, paginated
 from fastmcp.client.transports import FastMCPTransport
@@ -66,9 +67,9 @@ async def test_maps_all_filters_to_api_parameters(
     assert params["title__icontains"] == "bill"
     assert params["content__icontains"] == "june"
     assert params["tags__id__all"] == "1,2"
-    assert params["correspondent__id__exact"] == "3"
-    assert params["document_type__id__exact"] == "4"
-    assert params["storage_path__id__exact"] == "5"
+    assert params["correspondent__id"] == "3"
+    assert params["document_type__id"] == "4"
+    assert params["storage_path__id"] == "5"
     assert params["created__gte"] == "2026-01-01"
     assert params["created__lte"] == "2026-06-30"
     assert params["added__gte"] == "2026-01-01T00:00:00+00:00"
@@ -76,6 +77,66 @@ async def test_maps_all_filters_to_api_parameters(
     assert params["ordering"] == "-created"
     assert params["page"] == "2"
     assert params["page_size"] == "10"
+
+
+# Each structured filter maps to the exact query parameter paperless-ngx's
+# django-filter DocumentFilterSet registers.  The `__exact` lookup is the
+# implicit default, so its filters have no `__exact` suffix (e.g.
+# `correspondent__id`, not `correspondent__id__exact`); sending the suffixed
+# name is silently ignored by the API.
+FILTER_PARAMS = [
+    ({"title_contains": "bill"}, "title__icontains", "bill"),
+    ({"content_contains": "june"}, "content__icontains", "june"),
+    ({"tag_ids": [1, 2]}, "tags__id__all", "1,2"),
+    ({"correspondent_id": 3}, "correspondent__id", "3"),
+    ({"document_type_id": 4}, "document_type__id", "4"),
+    ({"storage_path_id": 5}, "storage_path__id", "5"),
+    ({"created_after": "2026-01-01"}, "created__gte", "2026-01-01"),
+    ({"created_before": "2026-06-30"}, "created__lte", "2026-06-30"),
+    (
+        {"added_after": "2026-01-01T00:00:00Z"},
+        "added__gte",
+        "2026-01-01T00:00:00+00:00",
+    ),
+    (
+        {"added_before": "2026-07-01T00:00:00Z"},
+        "added__lte",
+        "2026-07-01T00:00:00+00:00",
+    ),
+]
+
+
+@pytest.mark.parametrize(("arguments", "param", "expected"), FILTER_PARAMS)
+async def test_maps_each_filter_to_its_api_parameter(
+    mcp_client: fastmcp.Client[FastMCPTransport],
+    respx_mock: respx.MockRouter,
+    arguments: dict[str, object],
+    param: str,
+    expected: str,
+) -> None:
+    respx_mock.get("http://paperless.test/api/documents/").respond(json=paginated([]))
+
+    await mcp_client.call_tool("search_documents", arguments)
+
+    params = dict(respx_mock.calls.last.request.url.params)
+    assert params[param] == expected
+
+
+@pytest.mark.parametrize(("arguments", "param", "expected"), FILTER_PARAMS)
+async def test_keeps_each_filter_when_ordering_is_present(
+    mcp_client: fastmcp.Client[FastMCPTransport],
+    respx_mock: respx.MockRouter,
+    arguments: dict[str, object],
+    param: str,
+    expected: str,
+) -> None:
+    respx_mock.get("http://paperless.test/api/documents/").respond(json=paginated([]))
+
+    await mcp_client.call_tool("search_documents", {**arguments, "ordering": "created"})
+
+    params = dict(respx_mock.calls.last.request.url.params)
+    assert params[param] == expected
+    assert params["ordering"] == "created"
 
 
 async def test_ignores_empty_tag_list(
