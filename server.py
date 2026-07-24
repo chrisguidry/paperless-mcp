@@ -77,10 +77,13 @@ async def search_documents(
     """Search and filter documents in the archive.
 
     All parameters combine as AND conditions.  `query` is full-text search
-    over document contents using whoosh syntax: plain terms ("electric bill"),
+    over document contents using tantivy syntax: plain terms ("electric bill"),
     boolean operators ("chase AND (mortgage OR escrow)"), field prefixes
     ("correspondent:university", "type:invoice", "tag:unpaid",
-    "created:[2020 to 2023]"), and wildcards ("electr*").  Full-text results
+    "created:[2020 to 2023]"), and wildcards ("electr*").  Notes and custom
+    fields are structured fields with dotted paths — "notes.note:reimbursed",
+    "custom_fields.value:overdue", "custom_fields.name:warranty" — and plain
+    terms do NOT match them, only titles and content.  Full-text results
     are ranked by relevance and include a search_hit with highlights.
 
     `tag_ids` matches documents carrying ALL of the given tags.  `ordering`
