@@ -14,10 +14,14 @@ repos:
       - id: ruff-format
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.16.1
+  # mypy runs from the locked environment, so it checks against the same
+  # fastmcp and mcp that the tests run with, and not the newest release.
+  # It runs once over every file, because parallel runs share one cache.
+  - repo: local
     hooks:
       - id: mypy
-        additional_dependencies: [pytest, fastmcp, httpx, respx, pydantic]
-        args: [--strict, --show-error-codes]
+        name: mypy
+        entry: uv run mypy server.py models.py client.py tests
+        language: system
+        pass_filenames: false
         files: ^(server\.py|models\.py|client\.py|tests/.+\.py)$
