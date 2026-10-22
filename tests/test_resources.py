@@ -21,7 +21,7 @@ async def test_reads_document_content(
     assert len(contents) == 1
     assert isinstance(contents[0], TextResourceContents)
     assert contents[0].text == "Your electric service statement for June 2026."
-    assert contents[0].mimeType == "text/plain"
+    assert contents[0].mime_type == "text/plain"
 
 
 async def test_reads_empty_text_for_documents_without_content(
@@ -49,4 +49,4 @@ async def test_reads_document_thumbnail(
     assert len(contents) == 1
     assert isinstance(contents[0], BlobResourceContents)
     assert base64.b64decode(contents[0].blob) == b"webp image bytes"
-    assert contents[0].mimeType == "image/webp"
+    assert contents[0].mime_type == "image/webp"
