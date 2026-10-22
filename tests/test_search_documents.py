@@ -106,6 +106,15 @@ FILTER_PARAMS = [
         "added__lte",
         "2026-07-01T00:00:00+00:00",
     ),
+    ({"more_like_document_id": 7}, "more_like_id", "7"),
+    ({"has_correspondent": True}, "correspondent__isnull", "false"),
+    ({"has_correspondent": False}, "correspondent__isnull", "true"),
+    ({"has_document_type": True}, "document_type__isnull", "false"),
+    ({"has_document_type": False}, "document_type__isnull", "true"),
+    ({"has_storage_path": True}, "storage_path__isnull", "false"),
+    ({"has_storage_path": False}, "storage_path__isnull", "true"),
+    ({"is_in_inbox": True}, "is_in_inbox", "true"),
+    ({"is_in_inbox": False}, "is_in_inbox", "false"),
 ]
 
 
@@ -140,6 +149,35 @@ async def test_keeps_each_filter_when_ordering_is_present(
     params = dict(respx_mock.calls.last.request.url.params)
     assert params[param] == expected
     assert params["ordering"] == "created"
+
+
+async def test_combines_similar_documents_with_other_filters(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.get("http://paperless.test/api/documents/").respond(json=paginated([]))
+
+    await mcp_client.call_tool(
+        "search_documents",
+        {"more_like_document_id": 7, "correspondent_id": 3, "has_document_type": False},
+    )
+
+    params = dict(respx_mock.calls.last.request.url.params)
+    assert params["more_like_id"] == "7"
+    assert params["correspondent__id"] == "3"
+    assert params["document_type__isnull"] == "true"
+
+
+async def test_refuses_a_query_with_similar_documents(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    with pytest.raises(
+        ToolError, match="cannot combine query and more_like_document_id"
+    ):
+        await mcp_client.call_tool(
+            "search_documents", {"query": "electric", "more_like_document_id": 7}
+        )
+
+    assert not respx_mock.calls
 
 
 async def test_ignores_empty_tag_list(

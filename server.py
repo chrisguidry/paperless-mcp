@@ -14,8 +14,9 @@ path names to the IDs that search_documents filters on, and to resolve the IDs
 on a document back to names with their `ids` filter.
 
 Every document result carries a `uri` and a `web_url`.  Read the `uri` as an
-MCP resource to get the document's full text.  Give the `web_url` to the user
-to open the document in Paperless.
+MCP resource to get the document's full text, and read the `uri` followed by
+`/notes` to get its notes.  Give the `web_url` to the user to open the
+document in Paperless.
 
 A document's `created` date is the date on the document itself, and its
 `added` date is when it entered the archive.  This server is read-only and

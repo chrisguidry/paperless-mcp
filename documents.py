@@ -1,6 +1,6 @@
 """
 Documents: searching the archive, reading one document's metadata, and reading
-its text and thumbnail as MCP resources.
+its text, thumbnail, and notes as MCP resources.
 """
 
 from collections.abc import Callable
@@ -8,17 +8,20 @@ from datetime import date, datetime
 from typing import Any, Literal
 
 from fastmcp.dependencies import Shared
+from fastmcp.exceptions import ToolError
 from fastmcp.resources import ResourceContent, ResourceResult, resource
 from fastmcp.tools import tool
 from pydantic import (
     BaseModel,
     Field,
+    TypeAdapter,
     ValidationInfo,
     computed_field,
     model_validator,
 )
 
 from client import PaperlessClient, paperless_client, query_params
+from custom_field_query import CustomFieldQuery
 from effects import FOR_USER_AND_ASSISTANT, READ, READS
 from pagination import PageNumber, PageSize, Pagination
 
@@ -120,6 +123,9 @@ class Note(BaseModel):
     created: datetime
 
 
+NOTES = TypeAdapter(list[Note])
+
+
 class CustomFieldValue(BaseModel):
     """A custom field's value on a document."""
 
@@ -156,17 +162,28 @@ class DocumentSearchResponse(BaseModel):
     pagination: Pagination
 
 
+def _is_missing(has: bool | None) -> bool | None:
+    """Turn a has_* filter into the value of Paperless's __isnull filter."""
+    return None if has is None else not has
+
+
 @tool(title="Search documents", tags={"documents", READ}, annotations=READS)
 async def search_documents(
     query: str | None = None,
+    more_like_document_id: int | None = None,
     title_contains: str | None = None,
     content_contains: str | None = None,
     tag_ids: list[int] | None = None,
     any_tag_ids: list[int] | None = None,
     excluded_tag_ids: list[int] | None = None,
+    is_in_inbox: bool | None = None,
     correspondent_id: int | None = None,
+    has_correspondent: bool | None = None,
     document_type_id: int | None = None,
+    has_document_type: bool | None = None,
     storage_path_id: int | None = None,
+    has_storage_path: bool | None = None,
+    custom_field_query: CustomFieldQuery | None = None,
     created_after: date | None = None,
     created_before: date | None = None,
     added_after: datetime | None = None,
@@ -178,23 +195,41 @@ async def search_documents(
 ) -> DocumentSearchResponse:
     """Search and filter documents in the archive.
 
-    All parameters combine as AND conditions.  `query` is full-text search
-    over document contents using tantivy syntax: plain terms ("electric bill"),
-    boolean operators ("chase AND (mortgage OR escrow)"), field prefixes
-    ("correspondent:university", "type:invoice", "tag:unpaid",
+    All parameters combine as AND conditions, except that `query` and
+    `more_like_document_id` cannot be used together.  `query` is full-text
+    search over document contents using tantivy syntax: plain terms ("electric
+    bill"), boolean operators ("chase AND (mortgage OR escrow)"), field
+    prefixes ("correspondent:university", "type:invoice", "tag:unpaid",
     "created:[2020 to 2023]"), and wildcards ("electr*").  Notes and custom
     fields are structured fields with dotted paths: "notes.note:reimbursed",
     "custom_fields.value:overdue", "custom_fields.name:warranty".  Plain terms
     do NOT match them, only titles and content.  Full-text results include a
     search_hit with highlights.
 
+    `more_like_document_id` finds documents whose text is similar to one
+    document's, ranked by similarity in search_hit.rank.  The results leave
+    out that document itself, and the other filters narrow them.  Leave
+    `ordering` unset to keep the ranking.
+
+    To find unfiled documents, use is_in_inbox=true, or has_correspondent,
+    has_document_type, or has_storage_path set to false.
+
+    `custom_field_query` compares custom field values, like "Amount over 100"
+    or "Warranty Expires before 2027-01-01".  Every field type supports exact,
+    in, exists, and isnull.  Date, integer, float, and monetary fields add gt,
+    gte, lt, lte, and range.  String, URL, long text, and monetary fields add
+    icontains, istartswith, and iendswith.  Document link fields add contains.
+    Paperless refuses an operator that the field's type does not support.
+
     Each result carries a `uri`, which you can read as an MCP resource for the
     document's full text, and a `web_url` that links to the document in the
-    Paperless web UI.  Call get_document for a document's notes and custom
-    fields.
+    Paperless web UI.  Read paperless://documents/{id}/notes for a document's
+    notes, or call get_document for its notes and custom field values.
 
     Args:
         query: Full-text query in tantivy syntax, described above (default: none)
+        more_like_document_id: Match documents similar to the document with this
+            ID.  Cannot be combined with query (default: none)
         title_contains: Case-insensitive substring of the title (default: none)
         content_contains: Case-insensitive substring of the text content
             (default: none)
@@ -203,11 +238,22 @@ async def search_documents(
             (default: none)
         excluded_tag_ids: Match documents that have NONE of these tags
             (default: none)
+        is_in_inbox: true matches documents with at least one inbox tag, and
+            false matches documents with none (default: none)
         correspondent_id: Match documents from or to this correspondent
             (default: none)
+        has_correspondent: true matches documents with a correspondent, and
+            false matches documents without one (default: none)
         document_type_id: Match documents of this type (default: none)
+        has_document_type: true matches documents with a document type, and
+            false matches documents without one (default: none)
         storage_path_id: Match documents filed under this storage path
             (default: none)
+        has_storage_path: true matches documents with a storage path, and
+            false matches documents without one (default: none)
+        custom_field_query: Conditions on custom field values, described
+            above.  Name each field by its ID or exact name from
+            list_custom_fields (default: none)
         created_after: Match documents dated on or after this date, as
             YYYY-MM-DD (default: none)
         created_before: Match documents dated on or before this date, as
@@ -222,16 +268,29 @@ async def search_documents(
         page: Page number, starting at 1 (default: 1)
         page_size: Number of documents per page (default: 25)
     """
+    if query is not None and more_like_document_id is not None:
+        raise ToolError(
+            "Paperless cannot combine query and more_like_document_id.  "
+            "Pass one of them, and narrow the results with the other filters."
+        )
     params = query_params(
         query=query,
+        more_like_id=more_like_document_id,
         title__icontains=title_contains,
         content__icontains=content_contains,
         tags__id__all=tag_ids,
         tags__id__in=any_tag_ids,
         tags__id__none=excluded_tag_ids,
+        is_in_inbox=is_in_inbox,
         correspondent__id=correspondent_id,
+        correspondent__isnull=_is_missing(has_correspondent),
         document_type__id=document_type_id,
+        document_type__isnull=_is_missing(has_document_type),
         storage_path__id=storage_path_id,
+        storage_path__isnull=_is_missing(has_storage_path),
+        custom_field_query=(
+            custom_field_query.to_paperless() if custom_field_query else None
+        ),
         created__gte=created_after,
         created__lte=created_before,
         added__gte=added_after,
@@ -306,5 +365,27 @@ async def document_thumbnail(
     return ResourceResult([ResourceContent(thumbnail, mime_type="image/webp")])
 
 
+@resource(
+    "paperless://documents/{document_id}/notes",
+    name="document-notes",
+    title="Document notes",
+    description="The notes on a document, as a JSON list",
+    mime_type="application/json",
+    tags={"documents", READ},
+    annotations=FOR_USER_AND_ASSISTANT,
+)
+async def document_notes(
+    document_id: int, client: PaperlessClient = Shared(paperless_client)
+) -> ResourceResult:
+    notes = NOTES.validate_python(await client.get_notes(document_id))
+    return ResourceResult(
+        [ResourceContent(NOTES.dump_json(notes).decode(), mime_type="application/json")]
+    )
+
+
 TOOLS: list[Callable[..., object]] = [search_documents, get_document]
-RESOURCES: list[Callable[..., object]] = [document_content, document_thumbnail]
+RESOURCES: list[Callable[..., object]] = [
+    document_content,
+    document_thumbnail,
+    document_notes,
+]

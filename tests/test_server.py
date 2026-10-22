@@ -70,6 +70,7 @@ async def test_document_resources_are_titled_tagged_and_annotated(
             True,
             everyone,
         ),
+        "paperless://documents/{document_id}/notes": ("Document notes", True, everyone),
     }
 
 

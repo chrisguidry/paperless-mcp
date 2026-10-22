@@ -22,6 +22,7 @@ paperless-mcp = "server:mcp.run"
 only-include = [
     "server.py",
     "client.py",
+    "custom_field_query.py",
     "documents.py",
     "effects.py",
     "metadata.py",
@@ -45,6 +46,7 @@ dev = [
 addopts = [
     "--cov=server",
     "--cov=client",
+    "--cov=custom_field_query",
     "--cov=documents",
     "--cov=effects",
     "--cov=metadata",

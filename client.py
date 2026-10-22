@@ -48,6 +48,12 @@ class PaperlessClient:
     async def get_document(self, document_id: int) -> dict[str, Any]:
         return await self._get_json(f"/api/documents/{document_id}/")
 
+    async def get_notes(self, document_id: int) -> list[dict[str, Any]]:
+        response = await self._http.get(f"/api/documents/{document_id}/notes/")
+        response.raise_for_status()
+        notes: list[dict[str, Any]] = response.json()
+        return notes
+
     async def get_thumbnail(self, document_id: int) -> bytes:
         response = await self._http.get(f"/api/documents/{document_id}/thumb/")
         response.raise_for_status()

@@ -26,10 +26,31 @@ from client import REQUEST_TIMEOUT_SECONDS, PaperlessNotConfigured
 logger = logging.getLogger(__name__)
 
 
+# Paperless sends some refusals as a short plain-text body, like "Invalid
+# more_like_id".  A longer body, or one with markup, is an error page, and its
+# HTML is no use to the model.
+PLAIN_TEXT_DETAIL_LIMIT = 200
+
+
 def _messages(value: object) -> str:
+    """Join the messages of one field, which may be nested by position.
+
+    A custom_field_query error is nested by its position in the query, like
+    {"1": {"0": ["..."]}}.  The positions refer to Paperless's JSON, so only
+    the messages are useful to the model.
+    """
     if isinstance(value, list):
-        return " ".join(map(str, value))
+        return " ".join(map(_messages, value))
+    if isinstance(value, dict):
+        return " ".join(map(_messages, value.values()))
     return str(value)
+
+
+def _plain_text(response: httpx.Response) -> str | None:
+    text = response.text.strip()
+    if not text or len(text) > PLAIN_TEXT_DETAIL_LIMIT or "<" in text:
+        return None
+    return text
 
 
 def describe_status_error(error: httpx.HTTPStatusError) -> str:
@@ -54,7 +75,7 @@ def describe_status_error(error: httpx.HTTPStatusError) -> str:
     elif isinstance(body, list):
         detail = _messages(body)
     else:
-        detail = response.reason_phrase
+        detail = _plain_text(response) or response.reason_phrase
     return f"Paperless returned {response.status_code}: {detail}"
 
 

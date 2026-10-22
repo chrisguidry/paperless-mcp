@@ -46,8 +46,27 @@ def status_error(
             "Paperless returned 400: Invalid page.",
         ),
         (
+            status_error(
+                400,
+                json={"custom_field_query": {"1": {"0": {"1": ["Bad op.", "Bad."]}}}},
+            ),
+            "Paperless returned 400: custom_field_query: Bad op. Bad.",
+        ),
+        (
+            status_error(403, text="Invalid more_like_id"),
+            "Paperless returned 403: Invalid more_like_id",
+        ),
+        (
             status_error(500, text="<html>Server Error</html>"),
             "Paperless returned 500: Internal Server Error",
+        ),
+        (
+            status_error(502, text=""),
+            "Paperless returned 502: Bad Gateway",
+        ),
+        (
+            status_error(503, text="x" * 201),
+            "Paperless returned 503: Service Unavailable",
         ),
     ],
 )
