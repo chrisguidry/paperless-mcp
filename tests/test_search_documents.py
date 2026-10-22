@@ -113,6 +113,8 @@ FILTER_PARAMS = [
     ({"has_document_type": False}, "document_type__isnull", "true"),
     ({"has_storage_path": True}, "storage_path__isnull", "false"),
     ({"has_storage_path": False}, "storage_path__isnull", "true"),
+    ({"has_tags": True}, "is_tagged", "true"),
+    ({"has_tags": False}, "is_tagged", "false"),
     ({"is_in_inbox": True}, "is_in_inbox", "true"),
     ({"is_in_inbox": False}, "is_in_inbox", "false"),
 ]

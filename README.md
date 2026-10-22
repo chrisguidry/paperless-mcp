@@ -56,7 +56,7 @@ For Claude Desktop, add this to `claude_desktop_config.json`:
 
 | Tool | What it does |
 | --- | --- |
-| `search_documents` | Full-text search (tantivy syntax) or documents similar to one, plus filters for title, content, tags (all, any, or none of them), the inbox, correspondent, document type, and storage path (by ID, or whether one is set), custom field values, and dates |
+| `search_documents` | Full-text search (tantivy syntax) or documents similar to one, plus filters for title, content, tags (all, any, or none of them, or whether it has any), the inbox, correspondent, document type, and storage path (by ID, or whether one is set), custom field values, and dates |
 | `get_document` | One document's full metadata, with its notes, custom field values, and optional inline text content |
 | `list_tags` | Tags, filterable by name or IDs |
 | `list_correspondents` | Correspondents with the date of their newest document, filterable by name or IDs |

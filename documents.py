@@ -176,6 +176,7 @@ async def search_documents(
     tag_ids: list[int] | None = None,
     any_tag_ids: list[int] | None = None,
     excluded_tag_ids: list[int] | None = None,
+    has_tags: bool | None = None,
     is_in_inbox: bool | None = None,
     correspondent_id: int | None = None,
     has_correspondent: bool | None = None,
@@ -211,8 +212,8 @@ async def search_documents(
     out that document itself, and the other filters narrow them.  Leave
     `ordering` unset to keep the ranking.
 
-    To find unfiled documents, use is_in_inbox=true, or has_correspondent,
-    has_document_type, or has_storage_path set to false.
+    To find unfiled documents, use is_in_inbox=true, or has_tags,
+    has_correspondent, has_document_type, or has_storage_path set to false.
 
     `custom_field_query` compares custom field values, like "Amount over 100"
     or "Warranty Expires before 2027-01-01".  Every field type supports exact,
@@ -238,6 +239,8 @@ async def search_documents(
             (default: none)
         excluded_tag_ids: Match documents that have NONE of these tags
             (default: none)
+        has_tags: true matches documents with at least one tag, and false
+            matches documents with no tags (default: none)
         is_in_inbox: true matches documents with at least one inbox tag, and
             false matches documents with none (default: none)
         correspondent_id: Match documents from or to this correspondent
@@ -281,6 +284,7 @@ async def search_documents(
         tags__id__all=tag_ids,
         tags__id__in=any_tag_ids,
         tags__id__none=excluded_tag_ids,
+        is_tagged=has_tags,
         is_in_inbox=is_in_inbox,
         correspondent__id=correspondent_id,
         correspondent__isnull=_is_missing(has_correspondent),
