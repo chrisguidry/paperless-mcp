@@ -5,6 +5,7 @@ import pytest
 import respx
 from conftest import document_json, paginated
 from fastmcp.client.transports import FastMCPTransport
+from fastmcp.exceptions import ToolError
 
 
 async def test_searches_with_defaults(
@@ -88,6 +89,8 @@ FILTER_PARAMS = [
     ({"title_contains": "bill"}, "title__icontains", "bill"),
     ({"content_contains": "june"}, "content__icontains", "june"),
     ({"tag_ids": [1, 2]}, "tags__id__all", "1,2"),
+    ({"any_tag_ids": [1, 2]}, "tags__id__in", "1,2"),
+    ({"excluded_tag_ids": [8, 9]}, "tags__id__none", "8,9"),
     ({"correspondent_id": 3}, "correspondent__id", "3"),
     ({"document_type_id": 4}, "document_type__id", "4"),
     ({"storage_path_id": 5}, "storage_path__id", "5"),
@@ -150,10 +153,29 @@ async def test_ignores_empty_tag_list(
     assert "tags__id__all" not in params
 
 
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        pytest.param({"ordering": "original_filename"}, id="unsortable-field"),
+        pytest.param({"page": 0}, id="page-zero"),
+        pytest.param({"page_size": 0}, id="empty-page"),
+    ],
+)
+async def test_rejects_arguments_paperless_would_ignore_or_refuse(
+    mcp_client: fastmcp.Client[FastMCPTransport],
+    respx_mock: respx.MockRouter,
+    arguments: dict[str, object],
+) -> None:
+    with pytest.raises(ToolError):
+        await mcp_client.call_tool("search_documents", arguments)
+
+    assert not respx_mock.calls
+
+
 async def test_returns_search_hits_for_full_text_queries(
     mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
 ) -> None:
-    hit = {"score": 0.75, "rank": 0, "highlights": "your <span>electric</span> bill"}
+    hit = {"score": 0.75, "rank": 1, "highlights": "your <span>electric</span> bill"}
     respx_mock.get("http://paperless.test/api/documents/").respond(
         json=paginated([document_json(__search_hit__=hit)])
     )

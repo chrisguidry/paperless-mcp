@@ -19,7 +19,15 @@ dependencies = [
 paperless-mcp = "server:mcp.run"
 
 [tool.hatch.build.targets.wheel]
-only-include = ["server.py", "models.py", "client.py"]
+only-include = [
+    "server.py",
+    "client.py",
+    "documents.py",
+    "effects.py",
+    "metadata.py",
+    "pagination.py",
+    "paperless_errors.py",
+]
 
 [dependency-groups]
 dev = [
@@ -36,8 +44,12 @@ dev = [
 [tool.pytest.ini_options]
 addopts = [
     "--cov=server",
-    "--cov=models",
     "--cov=client",
+    "--cov=documents",
+    "--cov=effects",
+    "--cov=metadata",
+    "--cov=pagination",
+    "--cov=paperless_errors",
     "--cov=tests/",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
@@ -66,3 +78,6 @@ target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "RUF"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastmcp.dependencies.Shared"]

@@ -73,7 +73,7 @@ def correspondent_json(**overrides: Any) -> dict[str, Any]:
         "slug": "electric-company",
         "name": "Electric Company",
         "document_count": 24,
-        "last_correspondence": "2026-06-02T09:30:00Z",
+        "last_correspondence": "2026-06-02",
     }
     return correspondent | overrides
 
@@ -104,5 +104,7 @@ def custom_field_json(**overrides: Any) -> dict[str, Any]:
         "id": 6,
         "name": "Warranty Expires",
         "data_type": "date",
+        "extra_data": {"select_options": [], "default_currency": None},
+        "document_count": 3,
     }
     return custom_field | overrides

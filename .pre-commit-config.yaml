@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy server.py models.py client.py tests
+        entry: uv run mypy server.py client.py documents.py effects.py metadata.py pagination.py paperless_errors.py tests
         language: system
         pass_filenames: false
-        files: ^(server\.py|models\.py|client\.py|tests/.+\.py)$
+        files: ^(\w+\.py|tests/.+\.py)$

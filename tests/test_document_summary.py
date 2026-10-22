@@ -2,7 +2,7 @@
 
 from conftest import document_json
 
-from models import DocumentSummary
+from documents import DocumentSummary
 
 
 def test_web_url_uses_base_url_from_context() -> None:

@@ -5,7 +5,7 @@ import pytest
 import respx
 from conftest import paginated
 
-from client import PaperlessClient
+from client import REQUEST_TIMEOUT_SECONDS, PaperlessClient
 
 
 async def test_sends_token_and_api_version_headers(
@@ -28,3 +28,15 @@ async def test_raises_on_http_errors(respx_mock: respx.MockRouter) -> None:
 
     with pytest.raises(httpx.HTTPStatusError):
         await client.list_tags({})
+
+
+async def test_gives_up_on_a_request_after_a_timeout(
+    respx_mock: respx.MockRouter,
+) -> None:
+    respx_mock.get("http://paperless.test/api/tags/").respond(json=paginated([]))
+
+    client = PaperlessClient(base_url="http://paperless.test", token="secret")
+    await client.list_tags({})
+
+    timeouts = respx_mock.calls.last.request.extensions["timeout"]
+    assert set(timeouts.values()) == {REQUEST_TIMEOUT_SECONDS}

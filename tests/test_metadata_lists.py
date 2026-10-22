@@ -66,7 +66,8 @@ async def test_lists_with_defaults(
     result = await mcp_client.call_tool(tool_name, {})
 
     params = dict(respx_mock.calls.last.request.url.params)
-    assert params == {"page": "1", "page_size": "100"}
+    assert params["page"] == "1"
+    assert params["page_size"] == "100"
 
     assert result.structured_content is not None
     items = result.structured_content[response_key]
@@ -99,6 +100,81 @@ async def test_filters_by_name(
 
     params = dict(respx_mock.calls.last.request.url.params)
     assert params["name__icontains"] == "elec"
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "path", "factory", "response_key"), METADATA_TOOLS
+)
+async def test_filters_by_ids(
+    tool_name: str,
+    path: str,
+    factory: Callable[..., dict[str, Any]],
+    response_key: str,
+    mcp_client: fastmcp.Client[FastMCPTransport],
+    respx_mock: respx.MockRouter,
+) -> None:
+    respx_mock.get(f"http://paperless.test{path}").respond(json=paginated([]))
+
+    await mcp_client.call_tool(tool_name, {"ids": [3, 5]})
+
+    params = dict(respx_mock.calls.last.request.url.params)
+    assert params["id__in"] == "3,5"
+
+
+async def test_correspondents_include_their_last_correspondence(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.get("http://paperless.test/api/correspondents/").respond(
+        json=paginated([correspondent_json()])
+    )
+
+    result = await mcp_client.call_tool("list_correspondents", {})
+
+    params = dict(respx_mock.calls.last.request.url.params)
+    assert params["last_correspondence"] == "true"
+    assert result.structured_content is not None
+    correspondent = result.structured_content["correspondents"][0]
+    assert correspondent["last_correspondence"] == "2026-06-02"
+
+
+async def test_custom_fields_include_select_options(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    options = [
+        {"id": "Xk3Tq9", "label": "Paid"},
+        {"id": "b7Lm2Z", "label": "Unpaid"},
+    ]
+    respx_mock.get("http://paperless.test/api/custom_fields/").respond(
+        json=paginated(
+            [
+                custom_field_json(
+                    name="Status",
+                    data_type="select",
+                    extra_data={"select_options": options, "default_currency": None},
+                )
+            ]
+        )
+    )
+
+    result = await mcp_client.call_tool("list_custom_fields", {})
+
+    assert result.structured_content is not None
+    custom_field = result.structured_content["custom_fields"][0]
+    assert custom_field["select_options"] == options
+
+
+async def test_custom_fields_without_extra_data_have_no_select_options(
+    mcp_client: fastmcp.Client[FastMCPTransport], respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.get("http://paperless.test/api/custom_fields/").respond(
+        json=paginated([custom_field_json(extra_data=None)])
+    )
+
+    result = await mcp_client.call_tool("list_custom_fields", {})
+
+    assert result.structured_content is not None
+    custom_field = result.structured_content["custom_fields"][0]
+    assert custom_field["select_options"] == []
 
 
 async def test_tags_include_organizing_details(
