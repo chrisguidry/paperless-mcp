@@ -100,3 +100,14 @@ to paperless-ngx, and it exposes no way to create, modify, or delete
 documents.  It performs no authentication of its own.  Anyone who can reach
 the running server can read whatever the configured token can read, so treat
 the token accordingly and run the server close to where you use it.
+
+## Container image
+
+The container image serves the MCP server over HTTP on port 9000.  Build it
+with `docker buildx bake`, which reads `docker-bake.hcl`, the same file CI
+publishes from:
+
+```bash
+docker buildx bake --load
+docker run --rm -p 9000:9000 ghcr.io/chrisguidry/paperless-mcp:dev
+```
