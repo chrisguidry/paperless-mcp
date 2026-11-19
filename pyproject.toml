@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "paperless-mcp"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Read-only MCP server for paperless-ngx"
 readme = "README.md"
 license = "MIT"
@@ -17,6 +17,9 @@ dependencies = [
 
 [project.scripts]
 paperless-mcp = "paperless_mcp.server:mcp.run"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/paperless_mcp"]
