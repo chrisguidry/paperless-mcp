@@ -1,7 +1,7 @@
 """A thin async client for the paperless-ngx REST API."""
 
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import date
 from typing import Any
@@ -76,7 +76,7 @@ class PaperlessClient:
 
 
 @asynccontextmanager
-async def paperless_client() -> AsyncIterator[PaperlessClient]:
+async def paperless_client() -> AsyncGenerator[PaperlessClient]:
     """Build the client for the archive this server is configured for.
 
     Tools and resources receive it through FastMCP's Shared dependency, so the
@@ -96,7 +96,12 @@ async def paperless_client() -> AsyncIterator[PaperlessClient]:
         await client.aclose()
 
 
-def query_params(**values: Any) -> dict[str, Any]:
+# The values a tool passes as query parameters, before query_params formats
+# them.  None and an empty list mean the parameter is unset.
+type QueryValue = str | int | float | bool | date | list[int] | list[str] | None
+
+
+def query_params(**values: QueryValue) -> dict[str, Any]:
     """Build query parameters, dropping unset values and formatting the rest.
 
     Paperless reads a list of IDs as one comma-separated value, and dates in
