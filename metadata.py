@@ -76,7 +76,7 @@ class CustomField(BaseModel):
         )
     )
     select_options: list[SelectOption] = Field(
-        default_factory=list,
+        default_factory=list[SelectOption],
         validation_alias=AliasPath("extra_data", "select_options"),
         description="For a select field, the choices its values refer to by id",
     )

@@ -8,20 +8,32 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-added-large-files
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.4
     hooks:
-      - id: ruff-format
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-  # mypy runs from the locked environment, so it checks against the same
-  # fastmcp and mcp that the tests run with, and not the newest release.
-  # It runs once over every file, because parallel runs share one cache.
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      - id: ruff-format
+
+  # loq and pyright run from the locked environment, so pyright checks
+  # against the same fastmcp and pydantic that the tests run with.
+  # pyright checks the files that [tool.pyright] includes, in one run.
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy
-        entry: uv run mypy server.py client.py custom_field_query.py documents.py effects.py metadata.py pagination.py paperless_errors.py tests
+      - id: loq
+        name: loq (file size limits)
+        entry: uv run loq
         language: system
         pass_filenames: false
-        files: ^(\w+\.py|tests/.+\.py)$
+      - id: pyright
+        name: pyright (modules and tests)
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: false

@@ -32,8 +32,10 @@ only-include = [
 
 [dependency-groups]
 dev = [
-    "mypy>=2.4.1",
-    "pre-commit>=4.7.0",
+    "codespell>=2.4.3",
+    "loq>=0.2.0",
+    "prek>=0.5.10",
+    "pyright>=1.1.414",
     "pytest>=9.2.0",
     "pytest-asyncio>=1.5.0",
     "pytest-cov>=7.1.0",
@@ -78,9 +80,11 @@ env = [
 [tool.coverage.report]
 exclude_also = ["if __name__ == .__main__.:"]
 
-[tool.mypy]
-python_version = "3.15"
-strict = true
+[tool.pyright]
+include = ["*.py", "tests"]
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
 
 [tool.ruff]
 target-version = "py315"

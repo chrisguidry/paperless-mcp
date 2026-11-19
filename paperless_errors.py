@@ -32,7 +32,11 @@ logger = logging.getLogger(__name__)
 PLAIN_TEXT_DETAIL_LIMIT = 200
 
 
-def _messages(value: object) -> str:
+# A value of a JSON document, as httpx's Response.json() decodes it.
+type JSON = str | int | float | bool | list[JSON] | dict[str, JSON] | None
+
+
+def _messages(value: JSON) -> str:
     """Join the messages of one field, which may be nested by position.
 
     A custom_field_query error is nested by its position in the query, like
@@ -59,6 +63,7 @@ def describe_status_error(error: httpx.HTTPStatusError) -> str:
     if response.status_code == 401:
         return "Paperless did not accept the token. Check PAPERLESS_TOKEN."
 
+    body: JSON
     try:
         body = response.json()
     except ValueError:

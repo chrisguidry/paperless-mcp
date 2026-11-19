@@ -5,7 +5,7 @@ its text, thumbnail, and notes as MCP resources.
 
 from collections.abc import Callable
 from datetime import date, datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastmcp.dependencies import Shared
 from fastmcp.exceptions import ToolError
@@ -102,14 +102,17 @@ class DocumentSummary(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _resolve_web_url(cls, data: Any, info: ValidationInfo) -> Any:
-        base_url = (info.context or {}).get("base_url")
-        if base_url and isinstance(data, dict) and data.get("id") is not None:
-            data = {**data, "web_url": f"{base_url}/documents/{data['id']}"}
-        return data
+        context: dict[str, Any] = info.context or {}
+        base_url = context.get("base_url")
+        if not isinstance(data, dict):
+            return data
+        # Paperless's JSON objects have string keys and values of any type.
+        document = cast(dict[str, Any], data)
+        if base_url and document.get("id") is not None:
+            return {**document, "web_url": f"{base_url}/documents/{document['id']}"}
+        return document
 
-    @computed_field(  # type: ignore[prop-decorator]
-        description="MCP resource URI for the document's full text content"
-    )
+    @computed_field(description="MCP resource URI for the document's full text content")
     @property
     def uri(self) -> str:
         return f"paperless://documents/{self.id}"
@@ -151,8 +154,10 @@ class Document(DocumentSummary):
         default=None,
         description="Full text content, included only when requested",
     )
-    notes: list[Note] = Field(default_factory=list)
-    custom_fields: list[CustomFieldValue] = Field(default_factory=list)
+    notes: list[Note] = Field(default_factory=list[Note])
+    custom_fields: list[CustomFieldValue] = Field(
+        default_factory=list[CustomFieldValue]
+    )
 
 
 class DocumentSearchResponse(BaseModel):

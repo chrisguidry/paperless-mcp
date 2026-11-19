@@ -27,23 +27,31 @@ FieldReference = Annotated[
 Scalar = str | int | float | bool
 
 
-class Condition(BaseModel):
-    """One atom of a custom field query: a field, an operator, and a value."""
+class Condition[OperatorT: str, ValueT](BaseModel):
+    """One atom of a custom field query: a field, an operator, and a value.
+
+    Each subclass names its operators and its value's type as the type
+    parameters, so its own declarations of operator and value repeat the
+    base's types instead of narrowing them.
+    """
 
     field: FieldReference
-    operator: str
-    value: object
+    operator: OperatorT
+    value: ValueT
 
     def to_paperless(self) -> list[object]:
         return [self.field, self.operator, self.value]
 
 
-class ComparisonCondition(Condition):
+ComparisonOperator = Literal[
+    "exact", "gt", "gte", "lt", "lte", "icontains", "istartswith", "iendswith"
+]
+
+
+class ComparisonCondition(Condition[ComparisonOperator, Scalar]):
     """Compares a custom field's value with one value."""
 
-    operator: Literal[
-        "exact", "gt", "gte", "lt", "lte", "icontains", "istartswith", "iendswith"
-    ] = Field(
+    operator: ComparisonOperator = Field(
         description=(
             "exact: equal to the value, case-sensitive.  gt, gte, lt, lte: greater "
             "than, at least, less than, at most.  icontains, istartswith, "
@@ -59,7 +67,7 @@ class ComparisonCondition(Condition):
     )
 
 
-class MembershipCondition(Condition):
+class MembershipCondition(Condition[Literal["in"], list[Scalar]]):
     """Matches a custom field whose value is one of several values."""
 
     operator: Literal["in"]
@@ -69,7 +77,7 @@ class MembershipCondition(Condition):
     )
 
 
-class RangeCondition(Condition):
+class RangeCondition(Condition[Literal["range"], list[str | int | float]]):
     """Matches a custom field whose value is between two bounds, inclusive."""
 
     operator: Literal["range"]
@@ -80,10 +88,13 @@ class RangeCondition(Condition):
     )
 
 
-class PresenceCondition(Condition):
+PresenceOperator = Literal["exists", "isnull"]
+
+
+class PresenceCondition(Condition[PresenceOperator, bool]):
     """Matches on whether a document has a custom field, or a value for it."""
 
-    operator: Literal["exists", "isnull"] = Field(
+    operator: PresenceOperator = Field(
         description=(
             "exists: true matches documents that have the field, false matches "
             "documents without it.  isnull: true matches documents that have the "
@@ -94,7 +105,7 @@ class PresenceCondition(Condition):
     value: bool
 
 
-class DocumentLinkCondition(Condition):
+class DocumentLinkCondition(Condition[Literal["contains"], list[int]]):
     """Matches a document link field that links to all of these documents."""
 
     operator: Literal["contains"]
