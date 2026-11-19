@@ -1,10 +1,11 @@
 """Read-only MCP server for a paperless-ngx document archive."""
 
+from collections.abc import Callable
+
 from fastmcp import FastMCP
 
-import documents
-import metadata
-from paperless_errors import PaperlessErrorMiddleware
+from paperless_mcp import documents, metadata
+from paperless_mcp.paperless_errors import PaperlessErrorMiddleware
 
 INSTRUCTIONS = """Search and read documents in a paperless-ngx archive.
 
@@ -29,6 +30,7 @@ mcp: FastMCP[None] = FastMCP(
     mask_error_details=True,
     tools=[*documents.TOOLS, *metadata.TOOLS],
 )
+document_resource: Callable[..., object]
 for document_resource in documents.RESOURCES:
     mcp.add_resource(document_resource)
 

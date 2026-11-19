@@ -21,9 +21,9 @@ from fastmcp.resources import ResourceResult
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools import ToolResult
 
-from client import REQUEST_TIMEOUT_SECONDS, PaperlessNotConfigured
+from paperless_mcp.client import REQUEST_TIMEOUT_SECONDS, PaperlessNotConfigured
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 # Paperless sends some refusals as a short plain-text body, like "Invalid

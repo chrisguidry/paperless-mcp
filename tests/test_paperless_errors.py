@@ -11,7 +11,7 @@ from fastmcp.client.transports import FastMCPTransport
 from fastmcp.exceptions import ToolError
 from mcp.shared.exceptions import MCPError
 
-from paperless_errors import describe_status_error
+from paperless_mcp.paperless_errors import describe_status_error
 
 
 def status_error(

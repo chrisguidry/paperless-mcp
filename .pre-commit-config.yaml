@@ -23,7 +23,8 @@ repos:
 
   # loq and pyright run from the locked environment, so pyright checks
   # against the same fastmcp and pydantic that the tests run with.
-  # pyright checks the files that [tool.pyright] includes, in one run.
+  # --verifytypes checks that every public symbol of the package has a
+  # known type, and the second run checks the tests in strict mode.
   - repo: local
     hooks:
       - id: loq
@@ -32,8 +33,14 @@ repos:
         language: system
         pass_filenames: false
       - id: pyright
-        name: pyright (modules and tests)
-        entry: uv run pyright
+        name: pyright (paperless_mcp package)
+        entry: uv run pyright --verifytypes paperless_mcp --ignoreexternal
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pyright
+        name: pyright (source and tests)
+        entry: uv run pyright tests
         language: system
         types: [python]
         pass_filenames: false

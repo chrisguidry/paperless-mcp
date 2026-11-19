@@ -14,9 +14,9 @@ from fastmcp.dependencies import Shared
 from fastmcp.tools import tool
 from pydantic import AliasPath, BaseModel, Field
 
-from client import PaperlessClient, paperless_client, query_params
-from effects import READ, READS
-from pagination import PageNumber, PageSize, Pagination
+from paperless_mcp.client import PaperlessClient, paperless_client, query_params
+from paperless_mcp.effects import READ, READS
+from paperless_mcp.pagination import PageNumber, PageSize, Pagination
 
 
 class Tag(BaseModel):
