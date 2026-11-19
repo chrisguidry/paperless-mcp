@@ -20,10 +20,10 @@ from pydantic import (
     model_validator,
 )
 
-from client import PaperlessClient, paperless_client, query_params
-from custom_field_query import CustomFieldQuery
-from effects import FOR_USER_AND_ASSISTANT, READ, READS
-from pagination import PageNumber, PageSize, Pagination
+from paperless_mcp.client import PaperlessClient, paperless_client, query_params
+from paperless_mcp.custom_field_query import CustomFieldQuery
+from paperless_mcp.effects import FOR_USER_AND_ASSISTANT, READ, READS
+from paperless_mcp.pagination import PageNumber, PageSize, Pagination
 
 # The fields Paperless can sort documents by.  It ignores any other value
 # without an error, so the schema offers only these.

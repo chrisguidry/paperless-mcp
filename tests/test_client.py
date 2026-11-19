@@ -5,7 +5,7 @@ import pytest
 import respx
 from conftest import paginated
 
-from client import REQUEST_TIMEOUT_SECONDS, PaperlessClient
+from paperless_mcp.client import REQUEST_TIMEOUT_SECONDS, PaperlessClient
 
 
 async def test_sends_token_and_api_version_headers(

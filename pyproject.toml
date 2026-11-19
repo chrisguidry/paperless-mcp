@@ -16,19 +16,10 @@ dependencies = [
 ]
 
 [project.scripts]
-paperless-mcp = "server:mcp.run"
+paperless-mcp = "paperless_mcp.server:mcp.run"
 
 [tool.hatch.build.targets.wheel]
-only-include = [
-    "server.py",
-    "client.py",
-    "custom_field_query.py",
-    "documents.py",
-    "effects.py",
-    "metadata.py",
-    "pagination.py",
-    "paperless_errors.py",
-]
+packages = ["src/paperless_mcp"]
 
 [dependency-groups]
 dev = [
@@ -46,14 +37,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=server",
-    "--cov=client",
-    "--cov=custom_field_query",
-    "--cov=documents",
-    "--cov=effects",
-    "--cov=metadata",
-    "--cov=pagination",
-    "--cov=paperless_errors",
+    "--cov=src/paperless_mcp",
     "--cov=tests/",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
@@ -81,7 +65,7 @@ env = [
 exclude_also = ["if __name__ == .__main__.:"]
 
 [tool.pyright]
-include = ["*.py", "tests"]
+include = ["src", "tests"]
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"

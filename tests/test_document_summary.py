@@ -4,7 +4,7 @@ import pytest
 from conftest import document_json
 from pydantic import ValidationError
 
-from documents import DocumentSummary
+from paperless_mcp.documents import DocumentSummary
 
 
 def test_web_url_uses_base_url_from_context() -> None:

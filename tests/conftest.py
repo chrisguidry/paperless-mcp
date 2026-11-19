@@ -7,12 +7,12 @@ import fastmcp
 import pytest
 from fastmcp.client.transports import FastMCPTransport
 
-import server
+from paperless_mcp.server import mcp
 
 
 @pytest.fixture
 async def mcp_client() -> AsyncGenerator[fastmcp.Client[FastMCPTransport]]:
-    async with fastmcp.Client(server.mcp) as client:
+    async with fastmcp.Client(mcp) as client:
         yield client
 
 

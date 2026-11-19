@@ -4,7 +4,7 @@ import fastmcp
 from fastmcp.client.transports import FastMCPTransport
 from mcp.types import Annotations, ToolAnnotations
 
-from effects import READ
+from paperless_mcp.effects import READ
 
 
 async def test_every_tool_is_titled(
